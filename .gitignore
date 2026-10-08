@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# Evaluator Temporary Artifacts & Output
+temp_eval_*
+results_eval_*
+temp_web_*
+results_web_*
+evaluations.db
+
+# Environment variables & secrets
+.env
+.env.local
+
+# Non-evaluator files
+node_modules/
+package-lock.json
+package.json
+src/
+uploads/
+setup_tools.ps1
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

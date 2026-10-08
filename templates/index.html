@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Abhedhya Security Evaluator | Multi-Target Code & Live DAST Audit</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #060911;
+            --card-bg: rgba(13, 19, 33, 0.85);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent: #3b82f6;
+            --accent-glow: rgba(59, 130, 246, 0.35);
+            --cyan: #06b6d4;
+            --emerald: #10b981;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --success: #10b981;
+            --info: #38bdf8;
+            --glass-blur: blur(16px);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at 50% 0%, #111d38 0%, #060911 60%, #03050a 100%);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 30px 20px 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1050px;
+            position: relative;
+        }
+
+        /* Top Bar & Branding */
+        .top-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 25px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            padding: 12px 20px;
+            border-radius: 16px;
+            backdrop-filter: var(--glass-blur);
+        }
+
+        .brand-group {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .brand-logo {
+            width: 46px;
+            height: 46px;
+            object-fit: contain;
+            border-radius: 10px;
+            background: #fff;
+            padding: 2px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+
+        .brand-text h2 {
+            font-size: 1.15rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            background: linear-gradient(135deg, #60a5fa, #38bdf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand-text p {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+        }
+
+        .network-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #34d399;
+            padding: 6px 14px;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .dot-pulse {
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #10b981;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); opacity: 0.7; }
+            50% { transform: scale(1.3); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.7; }
+        }
+
+        /* Nav Tabs */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 10px;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-muted);
+            padding: 10px 18px;
+            border-radius: 12px;
+            font-size: 0.92rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .tab-btn:hover {
+            color: #fff;
+            background: rgba(255,255,255,0.04);
+        }
+
+        .tab-btn.active {
+            color: #fff;
+            background: rgba(59, 130, 246, 0.15);
+            border-color: rgba(59, 130, 246, 0.4);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2);
+        }
+
+        /* Card container */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 28px;
+            margin-bottom: 24px;
+            backdrop-filter: var(--glass-blur);
+            box-shadow: 0 20px 45px rgba(0, 0, 0, 0.5);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 2fr 0.8fr;
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+
+        @media(max-width: 768px) {
+            .form-grid { grid-template-columns: 1fr; }
+            .top-nav { flex-direction: column; gap: 12px; }
+        }
+
+        label {
+            display: block;
+            font-size: 0.82rem;
+            font-weight: 600;
+            margin-bottom: 7px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input[type="text"], select, textarea {
+            width: 100%;
+            padding: 13px 16px;
+            background: rgba(6, 10, 20, 0.7);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 0.95rem;
+            font-family: inherit;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        input[type="text"]:focus, select:focus, textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .btn-primary {
+            width: 100%;
+            background: linear-gradient(135deg, #2563eb, #3b82f6);
+            color: #fff;
+            border: none;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.5);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Live Progress Display */
+        .progress-box {
+            display: none;
+            margin-top: 20px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px dashed rgba(59, 130, 246, 0.4);
+            padding: 18px;
+            border-radius: 14px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            color: var(--cyan);
+        }
+
+        .spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-top: 2px solid var(--cyan);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* Scorecard Layout */
+        .score-hero {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.8));
+            border: 1px solid var(--card-border);
+            padding: 24px 30px;
+            border-radius: 18px;
+            margin-bottom: 20px;
+        }
+
+        .score-val {
+            font-size: 3.4rem;
+            font-weight: 900;
+            line-height: 1;
+            background: linear-gradient(135deg, #10b981, #34d399);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .grade-pill {
+            font-size: 1.3rem;
+            font-weight: 800;
+            padding: 6px 18px;
+            border-radius: 10px;
+            background: rgba(16, 185, 129, 0.18);
+            border: 1px solid #10b981;
+            color: #34d399;
+            display: inline-block;
+            margin-left: 10px;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        @media(max-width: 600px) { .metrics-grid { grid-template-columns: repeat(2, 1fr); } }
+
+        .metric-card {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid var(--card-border);
+            padding: 16px;
+            border-radius: 14px;
+            text-align: center;
+        }
+
+        .metric-card.crit { border-left: 4px solid var(--danger); }
+        .metric-card.high { border-left: 4px solid var(--warning); }
+        .metric-card.med { border-left: 4px solid var(--info); }
+        .metric-card.low { border-left: 4px solid var(--success); }
+
+        .metric-num { font-size: 1.8rem; font-weight: 800; }
+        .metric-lbl { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; margin-top: 4px; }
+
+        /* Findings Accordion */
+        .finding-card {
+            background: rgba(10, 15, 28, 0.8);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 12px;
+            transition: all 0.2s;
+        }
+
+        .finding-card:hover { border-color: rgba(59, 130, 246, 0.4); }
+
+        .finding-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .sev-tag {
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-size: 0.72rem;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .sev-critical { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
+        .sev-high { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
+        .sev-medium { background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); }
+        .sev-low { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+
+        .code-snippet {
+            background: rgba(0, 0, 0, 0.6);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+            color: #cbd5e1;
+            margin-top: 8px;
+            overflow-x: auto;
+        }
+
+        .remediation-text {
+            font-size: 0.84rem;
+            color: #93c5fd;
+            margin-top: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Leaderboard Table */
+        .styled-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            text-align: left;
+        }
+
+        .styled-table th {
+            background: rgba(30, 41, 59, 0.5);
+            padding: 14px 16px;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .styled-table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .styled-table tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .btn-action {
+            background: rgba(59, 130, 246, 0.15);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: #60a5fa;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-action:hover {
+            background: var(--accent);
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Top Header -->
+    <div class="top-nav">
+        <div class="brand-group">
+            <img src="/static/abedhya-logo.jpeg" onerror="this.src='https://via.placeholder.com/46?text=AB'" alt="Logo" class="brand-logo">
+            <div class="brand-text">
+                <h2>ABHEDHYA SECURITY EVALUATOR</h2>
+                <p>Multi-Target Automated Code SAST & Live DAST Grading Engine</p>
+            </div>
+        </div>
+        <div class="network-badge" id="netStatus">
+            <span class="dot-pulse"></span>
+            <span id="netText">Initializing System...</span>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('single')">🎯 Single Evaluation</button>
+        <button class="tab-btn" onclick="switchTab('batch')">⚡ Batch Evaluator</button>
+        <button class="tab-btn" onclick="switchTab('history')">📊 Marksheet & Leaderboard</button>
+        <button class="tab-btn" onclick="switchTab('network')">🌐 Multi-Device Access</button>
+    </div>
+
+    <!-- TAB 1: Single Evaluator -->
+    <div id="tab-single" class="tab-content">
+        <div class="card">
+            <h3 style="margin-bottom: 16px; font-weight: 700;">Evaluation Parameters</h3>
+            <div class="form-grid">
+                <div>
+                    <label>Team Identifier</label>
+                    <input type="text" id="teamName" placeholder="e.g. Team_01" value="Team_01">
+                </div>
+                <div>
+                    <label>Target Repository or Live Web URL</label>
+                    <input type="text" id="targetUrl" placeholder="https://github.com/OWASP/NodeGoat or https://app.example.com">
+                </div>
+                <div>
+                    <label>Max Marks</label>
+                    <select id="maxMarks">
+                        <option value="3.0" selected>3.0 Marks (Sec 2B)</option>
+                        <option value="5.0">5.0 Marks</option>
+                        <option value="10.0">10.0 Marks</option>
+                        <option value="100.0">100% Scale</option>
+                    </select>
+                </div>
+            </div>
+
+            <button class="btn-primary" id="btnScan" onclick="runSingleScan()">
+                <span>🛡️</span>
+                <span id="btnScanText">Start Security Evaluation</span>
+            </button>
+
+            <!-- Progress Box -->
+            <div class="progress-box" id="progressBox">
+                <div class="progress-header">
+                    <span id="progressTitle">Executing Security Scanning Pipeline...</span>
+                    <div class="spinner"></div>
+                </div>
+                <div id="progressLog" style="color: var(--text-muted); font-size: 0.8rem;">
+                    [1/4] Cloning shallow repository tree...
+                </div>
+            </div>
+        </div>
+
+        <!-- Result Box -->
+        <div id="resultCard" style="display: none;">
+            <div class="score-hero">
+                <div>
+                    <div style="font-size: 0.85rem; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Overall Security Score</div>
+                    <div style="display: flex; align-items: baseline; margin-top: 4px;">
+                        <span class="score-val" id="resScore">3.0</span>
+                        <span style="font-size: 1.5rem; color: var(--text-muted); margin-left: 6px;" id="resMaxScore">/ 3.0</span>
+                        <span class="grade-pill" id="resGrade">A+</span>
+                    </div>
+                    <div id="resTeamMeta" style="color: var(--text-muted); font-size: 0.85rem; margin-top: 6px;"></div>
+                </div>
+                <button class="btn-action" onclick="window.print()">🖨️ Print Marksheet</button>
+            </div>
+
+            <div class="metrics-grid">
+                <div class="metric-card crit">
+                    <div class="metric-num" style="color: var(--danger);" id="cntCrit">0</div>
+                    <div class="metric-lbl">Critical Flaws (-1.5)</div>
+                </div>
+                <div class="metric-card high">
+                    <div class="metric-num" style="color: var(--warning);" id="cntHigh">0</div>
+                    <div class="metric-lbl">High Flaws (-1.0)</div>
+                </div>
+                <div class="metric-card med">
+                    <div class="metric-num" style="color: var(--info);" id="cntMed">0</div>
+                    <div class="metric-lbl">Medium Flaws (-0.5)</div>
+                </div>
+                <div class="metric-card low">
+                    <div class="metric-num" style="color: var(--success);" id="cntLow">0</div>
+                    <div class="metric-lbl">Low Flaws (-0.2)</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 14px; font-weight: 700;">Identified Security Vulnerabilities & Remediation</h3>
+                <div id="findingsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 2: Batch Evaluator -->
+    <div id="tab-batch" class="tab-content" style="display: none;">
+        <div class="card">
+            <h3 style="margin-bottom: 12px; font-weight: 700;">Batch Repository Evaluation</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 16px;">Enter one team per line in format: <code>Team_Name, https://github.com/org/repo</code></p>
+            <textarea id="batchInput" rows="6" placeholder="Team_Alpha, https://github.com/OWASP/NodeGoat&#10;Team_Beta, https://github.com/appsecco/dsvw"></textarea>
+            <button class="btn-primary" style="margin-top: 16px;" onclick="runBatchScan()">🚀 Run Batch Evaluation</button>
+        </div>
+        <div id="batchResults" class="card" style="display: none;">
+            <h3 style="margin-bottom: 12px;">Batch Progress</h3>
+            <div id="batchList"></div>
+        </div>
+    </div>
+
+    <!-- TAB 3: Marksheet & Leaderboard -->
+    <div id="tab-history" class="tab-content" style="display: none;">
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="font-weight: 700;">Evaluation Marksheet</h3>
+                <a href="/api/export/csv" class="btn-action" style="text-decoration: none; padding: 10px 18px; font-size: 0.9rem;">📥 Download CSV Marksheet</a>
+            </div>
+            <div style="overflow-x: auto;">
+                <table class="styled-table">
+                    <thead>
+                        <tr>
+                            <th>Team</th>
+                            <th>Target URL</th>
+                            <th>Type</th>
+                            <th>Score</th>
+                            <th>Grade</th>
+                            <th>Vulnerabilities</th>
+                            <th>Date</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody">
+                        <tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Loading evaluations...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 4: Multi-Device / Internet Access -->
+    <div id="tab-network" class="tab-content" style="display: none;">
+        <div class="card">
+            <h3 style="margin-bottom: 14px; font-weight: 700;">Multi-Device & Public Internet Connectivity</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.6; margin-bottom: 20px;">
+                This evaluator can be accessed by other judges and students across different devices without being connected to the same Wi-Fi network.
+            </p>
+
+            <div style="background: rgba(0,0,0,0.5); padding: 20px; border-radius: 14px; border: 1px solid var(--card-border); margin-bottom: 20px;">
+                <h4 style="color: #60a5fa; margin-bottom: 8px;">1. Local Network (Same Wi-Fi)</h4>
+                <div style="font-family: 'JetBrains Mono', monospace; color: #fff; font-size: 1rem;" id="lanUrlDisplay">Loading...</div>
+            </div>
+
+            <div style="background: rgba(0,0,0,0.5); padding: 20px; border-radius: 14px; border: 1px solid var(--card-border);">
+                <h4 style="color: #34d399; margin-bottom: 8px;">2. Public Internet Link (Anywhere in the World)</h4>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 12px;">Generates a secure HTTPS tunnel so anyone can open this evaluator from their phone or laptop anywhere.</p>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="text" id="tunnelUrlDisplay" readonly value="Click 'Enable Public Link' to activate">
+                    <button class="btn-action" style="white-space: nowrap; padding: 12px 20px;" onclick="togglePublicTunnel()">Enable Public Link</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+        event.target.classList.add('active');
+        document.getElementById(`tab-${tabId}`).style.display = 'block';
+        if (tabId === 'history') loadHistory();
+    }
+
+    async function checkHealthAndNetwork() {
+        try {
+            const res = await fetch('/api/network-info');
+            const data = await res.json();
+            const netStatus = document.getElementById('netStatus');
+            const netText = document.getElementById('netText');
+            document.getElementById('lanUrlDisplay').innerText = data.local_url;
+
+            if (data.tunnel_active && data.public_url) {
+                netText.innerText = 'Internet Access Active';
+                document.getElementById('tunnelUrlDisplay').value = data.public_url;
+            } else {
+                netText.innerText = `LAN: ${data.local_ip}:5000`;
+            }
+        } catch (e) {
+            document.getElementById('netText').innerText = 'Local Server Running';
+        }
+    }
+
+    async function togglePublicTunnel() {
+        const tunnelInput = document.getElementById('tunnelUrlDisplay');
+        tunnelInput.value = 'Starting secure public tunnel...';
+        try {
+            const res = await fetch('/api/tunnel/toggle', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({enable: true})
+            });
+            const data = await res.json();
+            if (data.public_url) {
+                tunnelInput.value = data.public_url;
+                document.getElementById('netText').innerText = 'Public URL Active';
+                alert(`Public Link Ready:\n${data.public_url}\nShare this with anyone on any network!`);
+            } else {
+                tunnelInput.value = 'Cloudflared tunnel active on port 5000.';
+            }
+        } catch (e) {
+            tunnelInput.value = 'Failed to activate tunnel. Run `cloudflared tunnel` in console.';
+        }
+    }
+
+    async function runSingleScan() {
+        const team = document.getElementById('teamName').value.trim();
+        const target = document.getElementById('targetUrl').value.trim();
+        const maxMarks = parseFloat(document.getElementById('maxMarks').value);
+
+        if (!target) {
+            alert('Please provide a repository URL or Live URL.');
+            return;
+        }
+
+        const btn = document.getElementById('btnScan');
+        const progressBox = document.getElementById('progressBox');
+        const resultCard = document.getElementById('resultCard');
+        const progressLog = document.getElementById('progressLog');
+
+        btn.disabled = true;
+        progressBox.style.display = 'block';
+        resultCard.style.display = 'none';
+
+        const logs = [
+            "[1/4] Cloning shallow repository tree...",
+            "[2/4] Inspecting hardcoded secrets & leaked API keys...",
+            "[3/4] Cross-referencing dependency CVE advisories...",
+            "[4/4] Executing SAST code vulnerability engine..."
+        ];
+
+        let logIdx = 0;
+        const interval = setInterval(() => {
+            if (logIdx < logs.length) {
+                progressLog.innerText = logs[logIdx++];
+            }
+        }, 1500);
+
+        try {
+            const res = await fetch('/api/scan', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ team, target, max_score: maxMarks })
+            });
+
+            clearInterval(interval);
+            progressBox.style.display = 'none';
+            btn.disabled = false;
+
+            const data = await res.json();
+            if (!res.ok || data.status === 'FAILED') {
+                alert(`Scan Error: ${data.error || 'Failed to complete evaluation'}`);
+                return;
+            }
+
+            // Render result
+            resultCard.style.display = 'block';
+            document.getElementById('resScore').innerText = data.score;
+            document.getElementById('resMaxScore').innerText = `/ ${data.max_score}`;
+            document.getElementById('resGrade').innerText = data.grade;
+            document.getElementById('resTeamMeta').innerText = `Team: ${data.team_name} | Target: ${data.target_url} (${data.duration}s)`;
+
+            document.getElementById('cntCrit').innerText = data.severity.critical || 0;
+            document.getElementById('cntHigh').innerText = data.severity.high || 0;
+            document.getElementById('cntMed').innerText = data.severity.medium || 0;
+            document.getElementById('cntLow').innerText = data.severity.low || 0;
+
+            const findingsDiv = document.getElementById('findingsList');
+            findingsDiv.innerHTML = '';
+
+            if (!data.findings || data.findings.length === 0) {
+                findingsDiv.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--success); font-weight: 600;">🎉 Clean Repository! Zero security flaws identified. Full marks awarded.</div>';
+            } else {
+                data.findings.forEach(f => {
+                    const card = document.createElement('div');
+                    card.className = 'finding-card';
+                    card.innerHTML = `
+                        <div class="finding-top">
+                            <span style="font-weight: 700; font-size: 0.95rem;">${f.name}</span>
+                            <span class="sev-tag sev-${f.severity}">${f.severity}</span>
+                        </div>
+                        <div style="font-size: 0.82rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace;">
+                            📍 ${f.matched} | 🛠️ ${f.tool}
+                        </div>
+                        ${f.snippet ? `<div class="code-snippet">${escapeHtml(f.snippet)}</div>` : ''}
+                        ${f.remediation ? `<div class="remediation-text">💡 <strong>Remediation:</strong> ${f.remediation}</div>` : ''}
+                    `;
+                    findingsDiv.appendChild(card);
+                });
+            }
+
+            resultCard.scrollIntoView({ behavior: 'smooth' });
+
+        } catch (e) {
+            clearInterval(interval);
+            progressBox.style.display = 'none';
+            btn.disabled = false;
+            alert(`Unexpected network error: ${e.message}`);
+        }
+    }
+
+    async function loadHistory() {
+        const tbody = document.getElementById('historyTableBody');
+        try {
+            const res = await fetch('/api/history');
+            const list = await res.json();
+            tbody.innerHTML = '';
+
+            if (list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted);">No evaluations recorded yet.</td></tr>';
+                return;
+            }
+
+            list.forEach(e => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="font-weight: 700; color: #fff;">${e.team_name}</td>
+                    <td style="font-size: 0.8rem; color: var(--text-muted); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${e.target_url}</td>
+                    <td><span class="sev-tag sev-medium">${e.target_type}</span></td>
+                    <td style="font-weight: 800; color: #34d399;">${e.score} / ${e.max_score}</td>
+                    <td><span class="grade-pill" style="font-size: 0.85rem; padding: 2px 10px;">${e.grade}</span></td>
+                    <td>${e.findings_count} Flaws</td>
+                    <td style="font-size: 0.75rem; color: var(--text-muted);">${e.created_at}</td>
+                    <td><button class="btn-action" onclick="deleteHistoryItem('${e.id}')">Delete</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        } catch (err) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--danger);">Failed to load history.</td></tr>';
+        }
+    }
+
+    async function deleteHistoryItem(id) {
+        if (!confirm('Are you sure you want to delete this evaluation?')) return;
+        await fetch(`/api/scan/${id}`, { method: 'DELETE' });
+        loadHistory();
+    }
+
+    async function runBatchScan() {
+        const raw = document.getElementById('batchInput').value.trim();
+        if (!raw) return alert('Please enter teams and repo URLs.');
+        const lines = raw.split('\n');
+        const targets = [];
+        lines.forEach(l => {
+            const parts = l.split(',');
+            if (parts.length >= 2) {
+                targets.push({ team: parts[0].trim(), target: parts[1].trim() });
+            }
+        });
+
+        if (targets.length === 0) return alert('Invalid format. Use TeamName, RepoURL');
+
+        const batchResDiv = document.getElementById('batchResults');
+        const batchList = document.getElementById('batchList');
+        batchResDiv.style.display = 'block';
+        batchList.innerHTML = '<p style="color: var(--cyan);">Executing batch evaluation...</p>';
+
+        const res = await fetch('/api/batch-scan', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ targets, max_score: 3.0 })
+        });
+        const data = await res.json();
+        batchList.innerHTML = '';
+        data.results.forEach(r => {
+            const item = document.createElement('div');
+            item.style.cssText = 'padding: 10px; border-bottom: 1px solid var(--card-border); display: flex; justify-content: space-between;';
+            item.innerHTML = `<strong>${r.team_name}</strong> <span>Score: <strong>${r.score}/${r.max_score}</strong> (${r.grade}) - ${r.findings.length} findings</span>`;
+            batchList.appendChild(item);
+        });
+    }
+
+    function escapeHtml(str) {
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    window.onload = checkHealthAndNetwork;
+</script>
+</body>
+</html>
