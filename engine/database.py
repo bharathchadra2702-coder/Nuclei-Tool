@@ -8,12 +8,8 @@ DB_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "evaluat
 def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
-    return conn
-
-def init_db():
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("""
+    # Ensure table exists
+    conn.execute("""
         CREATE TABLE IF NOT EXISTS evaluations (
             id TEXT PRIMARY KEY,
             team_name TEXT NOT NULL,
@@ -34,6 +30,10 @@ def init_db():
         )
     """)
     conn.commit()
+    return conn
+
+def init_db():
+    conn = get_db()
     conn.close()
 
 def save_evaluation(eval_data):
